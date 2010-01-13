@@ -299,12 +299,15 @@ class TYPOlightDebug
 				$GLOBALS['TL_HOOKS']['outputBackendTemplate'][]=array('TYPOlightDebug', 'ProcessDebugData');
 
 				self::group('Execution evironment');
-				$processUser = posix_getpwuid(posix_geteuid());$processUser=$processUser['name'];
-				$scriptUser = get_current_user();
-				if($processUser != $scriptUser)
-					self::warn('Script owner: ' . $scriptUser . ' executed as: ' . $processUser );
-				else
-					self::info('Script owner: ' . $scriptUser . ' executed as: ' . $processUser);
+				if(function_exists('posix_getpwuid') && function_exists('posix_geteuid') && function_exists('get_current_user'))
+				{
+					$processUser = posix_getpwuid(posix_geteuid());$processUser=$processUser['name'];
+					$scriptUser = get_current_user();
+					if($processUser != $scriptUser)
+						self::warn('Script owner: ' . $scriptUser . ' executed as: ' . $processUser );
+					else
+						self::info('Script owner: ' . $scriptUser . ' executed as: ' . $processUser);
+				}
 				self::info((isset($_GET) && count($_GET) ? $_GET : NULL), '$_GET data');
 				self::info((isset($_POST) && count($_POST) ? $_POST : NULL), '$_POST data');
 				self::info((isset($_SESSION) && count($_SESSION) ? $_SESSION : NULL), '$_SESSION data');
