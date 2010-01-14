@@ -29,6 +29,7 @@
 class TYPOlightDebugArray extends ArrayObject
 {
 	protected $channel='';
+	protected $method='';
 
 	/**
 	* Standardizes path for windows systems.
@@ -39,17 +40,21 @@ class TYPOlightDebugArray extends ArrayObject
 	protected function path($Path) {
 		return preg_replace('/\\\\+/','/',$Path);    
 	}
-	
+
 	protected function addLine($value, $key='')
 	{
 		$file='';
 		$i=0;
-		if(is_array($value))
+		if(is_array($value) && (count($value)>=2) && ((is_string($value[1]) && ((strpos($value[1],'rows returned')!==false) || (strpos($value[1], 'rows affected')!==false)))))
 		{
-			$traces=debug_backtrace();
-			while(($file=='' || $file=='/system/libraries/Database.php') && $i++<count($traces))
+			// logging of statements disabled? exit!
+			if(!(array_key_exists('logDatabase', $GLOBALS['TL_CONFIG']) && $GLOBALS['TL_CONFIG']['logDatabase']))
+				return true;
+			$traces=debug_backtrace(false);
+			while(($file=='' || $file=='/system/libraries/Database.php') && $i++<count($traces)-2)
 			{
-				$trace=&$traces[$i];
+				if(!($trace=$traces[$i]))
+					break;
 				if(array_key_exists('file', $trace))
 				{
 					// are we still in debugging files?
@@ -58,15 +63,33 @@ class TYPOlightDebugArray extends ArrayObject
 				}
 			}
 			// only log database queries that are allowed, according to our settings.
-			if(in_array($file, $GLOBALS['TL_DEBUGGER']['DATABASE']))
+			if(preg_match('#/system/modules/([^/]+)/#', $file, $names))
+			{
+				if(!(array_key_exists('logDatabaseModules', $GLOBALS['TL_CONFIG']) && $GLOBALS['TL_CONFIG']['logDatabaseModules'] && in_array($names[1],deserialize($GLOBALS['TL_CONFIG']['logDatabaseModules']))))
+				return true;
+			} else {
+				// not from module directory, should be core then
+				if(!(array_key_exists('logDatabaseModules', $GLOBALS['TL_CONFIG']) && $GLOBALS['TL_CONFIG']['logDatabaseModules'] && in_array('core',deserialize($GLOBALS['TL_CONFIG']['logDatabaseModules']))))
+				return true;
+			}
+			// log and exit if it was a database query.
+			if($file !== '')
 			{
 				TYPOlightDebug::info($value, 'Database Query: ' . ($key ? $key : substr($value[0], 0, 80).'...'), true);
-			}
-			// exit if it was a database query, no matter if we handled it or not.
-			if($file !== '')
 				return true;
+			}
 		}
-		TYPOlightDebug::log($value, ($key ? $key : ''));
+		$label=$key;
+		if($this->method)
+		{
+			$label=$key;
+			$key=$this->method;
+			$this->method='';
+		}
+		if(in_array($key, array('log', 'info', 'warn', 'error')))
+			TYPOlightDebug::$key($value, $label);
+		else
+			TYPOlightDebug::log($value, ($key ? $key : ''));
 	}
 	public function append($value)
 	{
@@ -75,7 +98,10 @@ class TYPOlightDebugArray extends ArrayObject
 
 	public function offsetGet ($index)
 	{
-		$this->channel=$index;
+		if(in_array($index, array('log', 'info', 'warn', 'error')))
+			$this->method=$index;
+		else
+			$this->channel=$index;
 		return $this;
 	}
 

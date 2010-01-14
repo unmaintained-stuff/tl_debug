@@ -42,6 +42,9 @@ $GLOBALS['TL_LANG']['tl_debug']['logErrors']            = array('Fehleranzeige k
 $GLOBALS['TL_LANG']['tl_debug']['logHooks']             = array('Hooks verfolgen', 'Wählen Sie diese Option, um HOOKs zu verfolgen.');
 $GLOBALS['TL_LANG']['tl_debug']['logHookSelection']     = array('aktive Hooks', 'Wählen Sie die HOOKs aus, die verfolgt werden sollen.');
 
+$GLOBALS['TL_LANG']['tl_debug']['logDatabase']          = array('Datenbank Statements loggen', 'Wählen Sie diese Option, um die Ausführung von Datenbankabfragen zu verfolgen.');
+$GLOBALS['TL_LANG']['tl_debug']['logDatabaseModules']   = array('Datenbankabfragen nur in folgenden Modulen verfolgen', 'Wählen Sie alle Module, in welchen die Ausführung von Datenbankabfragen verfolgt werden soll.');
+
 /**
  * Legends
  */

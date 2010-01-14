@@ -58,6 +58,13 @@ class TypolightDebugFirePHP extends FirePHP
 	protected static $instance = null;
 
 	/**
+	 * Counter for the amount of data we are sending.
+	 *
+	 * @var FirePHP
+	 */
+	protected $headersizes = array();
+
+	/**
 	 * The object constructor
 	 */
 	function __construct() {
@@ -301,7 +308,7 @@ class TypolightDebugFirePHP extends FirePHP
     } else
     if($Type==self::TRACE)
 	{
-		$trace = debug_backtrace();
+		$trace = debug_backtrace(false);
 		$fromTrace=(isset($trace[1]['class']) && isset($trace[1]['file']) && $trace[1]['class']=='FirePHP' && ($trace[1]['function']=='trace'));
 		$trace=$this->cleanTrace($trace, $Object);
 		if(!$trace) return false;
@@ -343,7 +350,7 @@ class TypolightDebugFirePHP extends FirePHP
 	{
 		if(!isset($meta['file']) || !isset($meta['line']))
 		{
-			$trace = debug_backtrace();
+			$trace = debug_backtrace(false);
 			$trace=$this->cleanTrace($trace);
 			$meta['file'] = isset($trace[1]['file'])?$this->_escapeTraceFile($trace[1]['file']):'';
 			$meta['line'] = isset($trace[1]['line'])?$trace[1]['line']:'';
@@ -437,6 +444,26 @@ class TypolightDebugFirePHP extends FirePHP
 		} else {
 			return parent::jsonEncode($Object, $skipObjectEncode);
 		}
+	}
+
+	/**
+	 * Send header
+	 *
+	 * @param string $Name
+	 * @param string_type $Value
+	 */
+	protected function setHeader($Name, $Value)
+	{
+		$size=strlen($Name.': '.$Value);
+		$oldsize=(array_key_exists($Name, $this->headersizes)) ? $this->headersizes[$Name] : 0;
+		$this->headerSize+=$size-$oldsize;
+		$this->headersizes[$Name]=$size;
+		return parent::setHeader($Name, $Value);
+	}
+
+	public function getSize()
+	{
+		return array_sum($this->headersizes);
 	}
 
   /**
@@ -580,5 +607,6 @@ class TypolightDebugFirePHP extends FirePHP
     }
     return $return;
   }
+
 }
 ?>

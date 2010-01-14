@@ -26,19 +26,9 @@
  * @filesource
  */
 
-// an array for setting up debugging in certain files for database queries.
-// This is an example for logging all database queries from within index.php
-$GLOBALS['TL_DEBUGGER']['DATABASE'][]='/index.php';
-$GLOBALS['TL_DEBUGGER']['DATABASE'][]='/system/modules/frontend/PageRegular.php';
-$GLOBALS['TL_DEBUGGER']['DATABASE'][]='/system/libraries/User.php';
-
-$GLOBALS['TL_DEBUGGER']['TRACE'][]='/index.php';
-
 ///////////////////////////////////////////////////////////////////////////////
-// no changes below here. We need to have the startup here.
+// no changes in here. We only need to have the startup here as we need to be started as the last module.
 ///////////////////////////////////////////////////////////////////////////////
-
-
 TYPOlightDebug::startUp();
 
 ?>

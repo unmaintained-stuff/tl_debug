@@ -41,7 +41,7 @@ class TYPOlightDebug
 	 * maximum amount of debug data allowed to be sent to the client.
 	 * this is not required but suggested, as many proxies and anti virus software can not process large HTTP headers.
 	 */
-	protected static $maxsize=80000000; // apache default: 65535 - keeping reserve here as we can not know how much each object encoded will "eat".
+	protected static $maxsize=8000000; // we want to stop after at most 8megabytes. this will kill the browser otherwise.
 	/*
 	 * logic flag if the size has been exceeded.
 	 */
@@ -50,6 +50,10 @@ class TYPOlightDebug
 	 * counters for the different supressed messages.
 	 */
 	protected static $supressed=array(E_WARNING=>0, E_NOTICE=>0, E_USER_NOTICE=>0, E_USER_WARNING=>0,  E_ERROR=>0,  E_USER_ERROR=>0,  E_RECOVERABLE_ERROR=>0);
+	/*
+	 * counters for the different supressed messages.
+	 */
+	protected static $counted=array(E_WARNING=>0, E_NOTICE=>0, E_USER_NOTICE=>0, E_USER_WARNING=>0,  E_ERROR=>0,  E_USER_ERROR=>0,  E_RECOVERABLE_ERROR=>0);
 	/*
 	 * files to be skipped in error messages, if not mentioned within here, the error messages will get logged.
 	 */
@@ -196,7 +200,7 @@ class TYPOlightDebug
 				'Notices'=>(self::$supressed[E_NOTICE]+self::$supressed[E_USER_NOTICE]),
 				'Warnings'=>(self::$supressed[E_WARNING]+self::$supressed[E_USER_WARNING])
 				)));
-			self::$fb->info('Executed: ' . self::$ticks . ' statements.');
+			self::$fb->info('Executed: ' . self::$ticks . ' PHP statements.');
 		} catch (Exception $e) {
 			// we can not log via headers anymore, echo the exception out then.
 			echo $e->getMessage();
@@ -211,7 +215,7 @@ class TYPOlightDebug
 	 */
 	public static function startUp()
 	{
-		if($GLOBALS['TL_CONFIG']['enableDebug'] && !self::$fb)
+		if(array_key_exists('enableDebug', $GLOBALS['TL_CONFIG']) && $GLOBALS['TL_CONFIG']['enableDebug'] && !self::$fb)
 		{
 			$mayUseDebugger=false;
 			// pre checks if debugging is allowed.
@@ -277,9 +281,11 @@ class TYPOlightDebug
 					self::skipNoticesInFile(TL_ROOT.'/system/libraries/Widget.php');
 					self::skipNoticesInFile(TL_ROOT.'/system/libraries/Environment.php');
 					self::skipNoticesInFile(TL_ROOT.'/system/modules/backend');
+					self::skipNoticesInFile(TL_ROOT.'/system/modules/backend/dca');
 					self::skipNoticesInFile(TL_ROOT.'/system/modules/frontend');
 					self::skipNoticesInFile(TL_ROOT.'/system/drivers/DC_File.php');
 					self::skipNoticesInFile(TL_ROOT.'/system/drivers/DC_Table.php');
+					self::skipNoticesInFile(TL_ROOT.'/system/drivers/DB_Mysqli.php');
 					
 					self::skipNoticesInFile(TL_ROOT.'/system/modules/registration/ModuleRegistration.php');
 	
@@ -297,8 +303,13 @@ class TYPOlightDebug
 				if(array_key_exists('logHooks', $GLOBALS['TL_CONFIG']) && $GLOBALS['TL_CONFIG']['logHooks'])
 				{
 					$hooks = (array_key_exists('logHookSelection', $GLOBALS['TL_CONFIG']) && $GLOBALS['TL_CONFIG']['logHookSelection']) ? deserialize($GLOBALS['TL_CONFIG']['logHookSelection']) : array();
-					foreach(array_merge(array_keys($GLOBALS['TL_HOOKS']), $hooks) as $k)
+					//foreach(array_merge(array_keys($GLOBALS['TL_HOOKS']), $hooks) as $k)
+					foreach($hooks as $k)
 					{
+						if(!array_key_exists($k,$GLOBALS['TL_HOOKS']))
+							$GLOBALS['TL_HOOKS'][$k]=array();
+						//array_unshift($GLOBALS['TL_HOOKS'][$k],array('TYPOlightDebugHookCatcher', $k));
+						$GLOBALS['TL_HOOKS'][$k]=array(array('TYPOlightDebugHookCatcher', $k))+$GLOBALS['TL_HOOKS'][$k];
 						$GLOBALS['TL_HOOKS'][$k][]=array('TYPOlightDebugHookCatcher', $k);
 					}
 				}
@@ -368,12 +379,7 @@ class TYPOlightDebug
 	{
 		if(self::$sizeexceeded)
 			return false;
-		$hdr=headers_list();
-		$size=0;
-		foreach($hdr as $v)
-		{
-			$size+=strlen($v);
-		}
+		$size=self::$fb->getSize();
 		self::$size=$size;
 		if(self::$size>=self::$maxsize)
 		{
@@ -416,21 +422,27 @@ class TYPOlightDebug
 
 	public static function group($name, $options=false)
 	{
-		if(!$name)
+		if(self::checkSize())
 		{
-			$name='level '.count(self::$inGroup);
+			if(!$name)
+			{
+				$name='level '.count(self::$inGroup);
+			}
+			if(!$options)
+				$options=array('Collapsed' => true);
+			self::$fb->group($name);//, $options - options are buggy in firePHP.
+			array_push(self::$inGroup, $name);
 		}
-		if(!$options)
-			$options=array('Collapsed' => true);
-		self::$fb->group($name);//, $options - options are buggy in firePHP.
-		array_push(self::$inGroup, $name);
 	}
 
 	public static function groupEnd()
 	{
-		if(array_pop(self::$inGroup))
+		if(self::checkSize())
 		{
-			self::$fb->groupEnd();
+			if(array_pop(self::$inGroup))
+			{
+				self::$fb->groupEnd();
+			}
 		}
 	}
 
@@ -466,11 +478,16 @@ class TYPOlightDebug
 		if (ini_get('log_errors'))
 			error_log(sprintf("PHP %s:  %s in %s on line %d", $errno, $errstr, $errfile, $errline));
 
-
 		// if we want to filter this error, increment the according counter.
-		if(self::filterError($errno, $errstr, $errfile, $errline, $errcontext) || ((self::$log_severity & $errno)===0))
+		if(self::filterError($errno, $errstr, $errfile, $errline, $errcontext) || ((self::$log_severity & $errno)===0) || self::$counted[$errno]==500)
 		{
 			self::$supressed[$errno]+=1;
+			return true;
+		}
+		self::$counted[$errno]+=1;
+		if(self::$counted[$errno]==500)
+		{
+			self::warn('500 errors of type ' . self::$severity[$errno] . ', will not report them anymore.');
 			return true;
 		}
 
@@ -483,7 +500,7 @@ class TYPOlightDebug
 				case E_NOTICE:
 				case E_USER_NOTICE:
 				case E_STRICT:
-					self::log(self::$severity[$errno] . ':' . $errstr . $location, true);
+					self::log(self::$severity[$errno] . ':' . $errstr . $location/*, true*/);
 					break;
 				case E_CORE_WARNING:
 				case E_COMPILE_WARNING: 
@@ -740,7 +757,7 @@ class TYPOlightDebugHookCatcher
 	public function reviseTable($strTable, $ids, $foo, $bar)
 	{
 		$params = func_get_args();
-		$this->ProcessHook('reviseTable ' . $strTable, $params);
+		$this->ProcessHook('reviseTable', $params);
 		return;
 	}
 
@@ -786,12 +803,31 @@ class TYPOlightDebugHookCatcher
 		throw new Exception('TYPOlight Debugger error: UNKNOWN HOOK called: '.$strMethod);
 	}
 
+
+	protected static $hookstack=array();
+
 	/*
 	 * generic hook logging facility.
 	*/
 	protected function ProcessHook($hookname, $params)
 	{
-		TYPOlightDebug::info($params, 'HOOK::'.$hookname);
+		$cnt=count($GLOBALS['TL_HOOKS'][$hookname])-2;
+		if($cnt)
+		{
+			$lasthook=end(self::$hookstack);
+			if($lasthook===$hookname)
+			{
+				TYPOlightDebug::info('EXIT HOOK::'.$hookname);
+				TYPOlightDebug::groupEnd();
+				array_pop(self::$hookstack);
+			} else {
+				array_push(self::$hookstack, $hookname);
+				TYPOlightDebug::group('HOOK::'.$hookname . ' (' . $cnt . ' handler' . ($cnt-1 ? 's' :''). ' registered)' );
+				TYPOlightDebug::info($params, 'ENTER HOOK::'.$hookname);
+			}
+		} else {
+			TYPOlightDebug::info($params, 'HOOK::'.$hookname);
+		}
 	}
 	
 	/*

@@ -40,7 +40,7 @@ $GLOBALS['TL_DCA']['tl_debug'] = array
 	'palettes' => array
 	(
 		'__selector__'                => array(),
-		'default'                     => '{base_legend},enableDebug,enableDebugMember,enableDebugUser;{debugdata_legend},hideCoreNotices,showNotices,logErrors,logHooks,logHookSelection'
+		'default'                     => '{base_legend},enableDebug,enableDebugMember,enableDebugUser;{debugdata_legend},hideCoreNotices,logErrors,showNotices,logHooks,logHookSelection,logDatabase,logDatabaseModules'
 	),
 
 	// Subpalettes
@@ -106,7 +106,20 @@ $GLOBALS['TL_DCA']['tl_debug'] = array
 			'options_callback'         => array('TYPOlightDebugHookCatcher','getHooks'),
 			'eval'                    => array('multiple' => true, 'tl_class'=>'')
 		),
+		'logDatabase' => array
+		(
+			'label'                   => &$GLOBALS['TL_LANG']['tl_debug']['logDatabase'],
+			'inputType'               => 'checkbox',
+			'eval'                    => array('tl_class'=>'')
+		),
 
+		'logDatabaseModules' => array
+		(
+			'label'                   => &$GLOBALS['TL_LANG']['tl_debug']['logDatabaseModules'],
+			'inputType'               => 'checkbox',
+			'options_callback'        => array('tl_debug', 'getModules'),
+			'eval'                    => array('multiple'=>true)
+		),
 		'adminEmail' => array
 		(
 			'label'                   => &$GLOBALS['TL_LANG']['tl_debug']['adminEmail'],
@@ -115,5 +128,46 @@ $GLOBALS['TL_DCA']['tl_debug'] = array
 		),
 	)
 );
+
+/**
+ * Class tl_debug
+ *
+ * Provide miscellaneous methods that are used by the data configuration array.
+ * @copyright  Cyberspectrum 2010
+ * @author     Christian Schiffler <c.schiffler@cyberspectrum.de>
+ * @package    Controller
+ */
+class tl_debug extends Backend
+{
+	/**
+	 * Return all modules as array
+	 * @return array
+	 */
+	public function getModules()
+	{
+		$arrReturn = array();
+		$arrInactiveModules = deserialize($GLOBALS['TL_CONFIG']['inactiveModules']);
+		$blnCheckInactiveModules = is_array($arrInactiveModules);
+		$arrModules = scan(TL_ROOT . '/system/modules');
+		foreach ($arrModules as $strModule)
+		{
+			if((substr($strModule, 0, 1) == '.')
+				|| (substr($strModule, -5, 5) == 'debug')
+				|| (!is_dir(TL_ROOT . '/system/modules/' . $strModule))
+				|| ($blnCheckInactiveModules && in_array($strModule, $arrInactiveModules)))
+			{
+				continue;
+			}
+			$label = 
+				(array_key_exists($strModule, $GLOBALS['TL_LANG']['MOD']) && is_array($GLOBALS['TL_LANG']['MOD'][$strModule]))
+				? $GLOBALS['TL_LANG']['MOD'][$strModule][0]
+				: ((array_key_exists($strModule, $GLOBALS['TL_LANG']['MOD']) && $GLOBALS['TL_LANG']['MOD'][$strModule]) ? $GLOBALS['TL_LANG']['MOD'][$strModule] : '');
+			$arrReturn[$strModule] = strlen($label)	? $label : $strModule;
+		}
+		natcasesort($arrReturn);
+		$arrReturn=array('core' => 'Core')+$arrReturn;
+		return $arrReturn;
+	}
+}
 
 ?>
