@@ -41,7 +41,22 @@
  * @license     http://www.opensource.org/licenses/bsd-license.php
  * @package     FirePHP
  */
- 
+
+/**
+ * @see http://code.google.com/p/firephp/issues/detail?id=112
+ */
+if(!defined('E_STRICT')) {
+  define('E_STRICT', 2048);
+}
+if(!defined('E_RECOVERABLE_ERROR')) {
+  define('E_RECOVERABLE_ERROR', 4096);
+}
+if(!defined('E_DEPRECATED')) {
+  define('E_DEPRECATED', 8192);
+}
+if(!defined('E_USER_DEPRECATED')) {
+  define('E_USER_DEPRECATED', 16384);
+} 
  
 /**
  * Sends the given data to the FirePHP Firefox Extension.
@@ -221,10 +236,6 @@ class FirePHP {
    * The object constructor
    */
   function __construct() {
-	// change c.schiffler: check if the file, class or class+function is mentioned in the hide options.
-	$this->skipClasses=array();
-	$this->skipFiles=array();
-	// end change c.schiffler: check if the file, class or class+function is mentioned in the hide options.
   }
 
   /**
@@ -605,106 +616,7 @@ class FirePHP {
     }
     return true;    
   }
-
-	// change c.schiffler: check if the file, class or class+function is mentioned in the hide options.
-	public function skipClassInTrace($classname)
-	{
-		$this->skipClasses[]=$classname;
-	}
-
-	public function skipFileInTrace($filename)
-	{
-		$this->skipFiles[]=$filename;
-	}
-
-	protected function cleanTrace($trace, $Object='')
-	{
-		$ret=array();
-		$idx=0;
-		/*
-		for($i=0;$i<sizeof($trace);$i++)
-		{
-			if(
-				($trace[$i]['function']=='fb'
-        		   || $trace[$i]['function']=='trace'
-        		   || $trace[$i]['function']=='send') 
-				|| !(
-					(array_key_exists('class', $trace[$i])
-					&& (
-						in_array($trace[$i]['class'], $this->skipClasses)
-						|| (
-							array_key_exists('function', $trace[$i])
-							&& in_array($trace[$i]['class'].'->'.$trace[$i]['function'], $this->skipClasses))
-						)
-					)
-					|| (array_key_exists('file', $trace[$i]) && in_array($trace[$i]['file'], $this->skipFiles))
-					)
-				)
-			{
-				$ret[$idx++]=&$trace[$i];
-			}
-		}
-		*/
-		for($i=0;$i<count($trace);$i++)
-		{
-			// check if it is some firePHP file we are issuing.
-			
-			// check if it is the TYPOlight debugger.
-			if(isset($trace[$i]['file'])
-					&& ((substr($trace[$i]['file'],-18,18)=='TYPOlightDebug.php')
-						|| (substr($trace[$i]['file'],-23,23)=='TYPOlightDebugArray.php' && $trace[$i]['function']!='offsetSet')
-						|| (substr($trace[$i]['file'],-24,24)=='TYPOlightDebugConfig.php' && $trace[$i]['function']!='offsetSet'))
-			)
-			continue;
-
-			if(isset($trace[$i]['class']) && ($trace[$i]['class']=='TYPOlightDebug'))
-			{
-				if($trace[$i]['function']=='errorHandler')
-				{
-					$trace[$i]['function']='--HERE--';
-					unset($trace[$i]['class']);
-					$trace[$i]['args']=array();
-				} else if(substr($trace[$i]['file'],-14,14)=='TYPOlightDebug')
-					continue;
-				else {
-					unset($trace[$i]['class']);
-					if(isset($trace[$i]['args']) && count($trace[$i]['args'])>=2)
-					$trace[$i]['args']=array($trace[$i]['args'][0],$trace[$i]['args'][1]);
-				}
-			}
-
-			if(isset($trace[$i]['class']) && $trace[$i]['class']=='TYPOlightDebugArray')
-			{
-				if($trace[$i]['function']=='offsetSet')
-				{
-					$trace[$i]['function']='TL_DEBUG';
-					$trace[$i]['args']=array_splice($trace[$i]['args'],1);
-					unset($trace[$i]['class']);
-				} else
-					continue;
-			}
-			if(isset($trace[$i]['class']) && $trace[$i]['class']=='TYPOlightDebugConfig')
-			{
-				if($trace[$i]['function']=='offsetSet')
-				{
-					$trace[$i]['function']='$GLOBALS[\'TL_CONFIG\'][\''.$trace[$i]['args'][0].'\']=';
-					unset($trace[$i]['object']);
-					$trace[$i]['args']=array_splice($trace[$i]['args'],1);
-					unset($trace[$i]['class']);
-				} else
-					continue;
-			}
-
-			// keep this entry in the stack.
-			$ret[$idx++]=$trace[$i];
-		}
-		//return $trace;
-		
-		return $ret;
-	}
-	// end change c.schiffler: check if the file, class or class+function is mentioned in the hide options.
-
-
+ 
   /**
    * Log varible to Firebug
    * 
@@ -714,6 +626,7 @@ class FirePHP {
    * @throws Exception
    */
   public function fb($Object) {
+  
     if(!$this->enabled) {
       return false;
     }
@@ -779,8 +692,6 @@ class FirePHP {
       $meta['line'] = $Object->getLine();
       
       $trace = $Object->getTrace();
-		// change c.schiffler: check if the file, class or class+function is mentioned in the hide options.
-		$trace=$this->cleanTrace($trace);
       if($Object instanceof ErrorException
          && isset($trace[0]['function'])
          && $trace[0]['function']=='errorHandler'
@@ -822,24 +733,42 @@ class FirePHP {
     if($Type==self::TRACE) {
       
       $trace = debug_backtrace();
-		// change c.schiffler: check if the file, class or class+function is mentioned in the hide options.
-		$fromTrace=(isset($trace[1]['class']) && isset($trace[1]['file']) && $trace[1]['class']=='FirePHP' && ($trace[1]['function']=='trace'));
-		$trace=$this->cleanTrace($trace, $Object);
-		// end change c.schiffler: check if the file, class or class+function is mentioned in the hide options.
       if(!$trace) return false;
-	  $i=1;
+      for( $i=0 ; $i<sizeof($trace) ; $i++ ) {
+
+        if(isset($trace[$i]['class'])
+           && isset($trace[$i]['file'])
+           && ($trace[$i]['class']=='FirePHP'
+               || $trace[$i]['class']=='FB')
+           && (substr($this->_standardizePath($trace[$i]['file']),-18,18)=='FirePHPCore/fb.php'
+               || substr($this->_standardizePath($trace[$i]['file']),-29,29)=='FirePHPCore/FirePHP.class.php')) {
+          /* Skip - FB::trace(), FB::send(), $firephp->trace(), $firephp->fb() */
+        } else
+        if(isset($trace[$i]['class'])
+           && isset($trace[$i+1]['file'])
+           && $trace[$i]['class']=='FirePHP'
+           && substr($this->_standardizePath($trace[$i+1]['file']),-18,18)=='FirePHPCore/fb.php') {
+          /* Skip fb() */
+        } else
+        if($trace[$i]['function']=='fb'
+           || $trace[$i]['function']=='trace'
+           || $trace[$i]['function']=='send') {
           $Object = array('Class'=>isset($trace[$i]['class'])?$trace[$i]['class']:'',
                           'Type'=>isset($trace[$i]['type'])?$trace[$i]['type']:'',
                           'Function'=>isset($trace[$i]['function'])?$trace[$i]['function']:'',
-                          'Message'=> $fromTrace ? $Object : (isset($trace[$i]['args'])&& count($trace[$i]['args']) ? $trace[$i]['args'][0] : '...'),
+                          'Message'=>$trace[$i]['args'][0],
                           'File'=>isset($trace[$i]['file'])?$this->_escapeTraceFile($trace[$i]['file']):'',
                           'Line'=>isset($trace[$i]['line'])?$trace[$i]['line']:'',
                           'Args'=>isset($trace[$i]['args'])?$this->encodeObject($trace[$i]['args']):'',
                           'Trace'=>$this->_escapeTrace(array_splice($trace,$i+1)));
-		// end change c.schiffler: check if the file, class or class+function is mentioned in the hide options.
+
           $skipFinalObjectEncode = true;
           $meta['file'] = isset($trace[$i]['file'])?$this->_escapeTraceFile($trace[$i]['file']):'';
           $meta['line'] = isset($trace[$i]['line'])?$trace[$i]['line']:'';
+          break;
+        }
+      }
+
     } else
     if($Type==self::TABLE) {
       
@@ -863,16 +792,37 @@ class FirePHP {
         $Type = self::LOG;
       }
     }
-
+    
     if($this->options['includeLineNumbers']) {
       if(!isset($meta['file']) || !isset($meta['line'])) {
 
         $trace = debug_backtrace();
-		// change c.schiffler: check if the file, class or class+function is mentioned in the hide options.
-		$trace=$this->cleanTrace($trace);
-		// change c.schiffler: check if the file, class or class+function is mentioned in the hide options.
-        $meta['file'] = isset($trace[1]['file'])?$this->_escapeTraceFile($trace[1]['file']):'';
-        $meta['line'] = isset($trace[1]['line'])?$trace[1]['line']:'';
+        for( $i=0 ; $trace && $i<sizeof($trace) ; $i++ ) {
+  
+          if(isset($trace[$i]['class'])
+             && isset($trace[$i]['file'])
+             && ($trace[$i]['class']=='FirePHP'
+                 || $trace[$i]['class']=='FB')
+             && (substr($this->_standardizePath($trace[$i]['file']),-18,18)=='FirePHPCore/fb.php'
+                 || substr($this->_standardizePath($trace[$i]['file']),-29,29)=='FirePHPCore/FirePHP.class.php')) {
+            /* Skip - FB::trace(), FB::send(), $firephp->trace(), $firephp->fb() */
+          } else
+          if(isset($trace[$i]['class'])
+             && isset($trace[$i+1]['file'])
+             && $trace[$i]['class']=='FirePHP'
+             && substr($this->_standardizePath($trace[$i+1]['file']),-18,18)=='FirePHPCore/fb.php') {
+            /* Skip fb() */
+          } else
+          if(isset($trace[$i]['file'])
+             && substr($this->_standardizePath($trace[$i]['file']),-18,18)=='FirePHPCore/fb.php') {
+            /* Skip FB::fb() */
+          } else {
+            $meta['file'] = isset($trace[$i]['file'])?$this->_escapeTraceFile($trace[$i]['file']):'';
+            $meta['line'] = isset($trace[$i]['line'])?$trace[$i]['line']:'';
+            break;
+          }
+        }      
+      
       }
     } else {
       unset($meta['file']);
@@ -934,6 +884,7 @@ class FirePHP {
     }
 
   	$this->setHeader('X-Wf-1-Index',$this->messageIndex-1);
+
     return true;
   }
   
@@ -1031,7 +982,7 @@ class FirePHP {
     if(function_exists('json_encode')
        && $this->options['useNativeJsonEncode']!=false) {
 
-      return @json_encode($Object);
+      return json_encode($Object);
     } else {
       return $this->json_encode($Object);
     }
@@ -1125,8 +1076,7 @@ class FirePHP {
           
           if(!(isset($this->objectFilters[$class_lower])
                && is_array($this->objectFilters[$class_lower])
-			   && (in_array($raw_name,$this->objectFilters[$class_lower])
-                 || in_array('*',$this->objectFilters[$class_lower])))) {
+               && in_array($raw_name,$this->objectFilters[$class_lower]))) {
 
             if(array_key_exists($raw_name,$members)
                && !$property->isStatic()) {
@@ -1592,4 +1542,3 @@ class FirePHP {
       return $this->json_encode(strval($name)) . ':' . $encoded_value;
   }
 }
-?>

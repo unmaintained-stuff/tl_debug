@@ -159,6 +159,8 @@ class TYPOlightDebug
 	 */
 	public static function shutDown()
 	{
+		//self::$fb->setProcessorUrl(Environment::getInstance()->base . 'system/modules/debug/html/RequestProcessor.js');
+		//$this->setRendererUrl($URL);
 		if ($error = error_get_last())
 		{
 			switch($error['type'])
@@ -229,14 +231,14 @@ class TYPOlightDebug
 				return;
 
 			// starting up.
-			require_once(TL_ROOT . '/system/modules/debug/FirePHPCore/FirePHP.class.php');
-			$fb=FirePHP::getInstance(true);
+			$fb=TypolightDebugFirePHP::getInstance(true);
 			self::$fb=$fb;
 			if($fb->detectClientExtension())
 			{
 				// native encoding dumps way too many notices. Very bad when within error handler, as we can not capture it then.
-				//$fb->setOptions(array('useNativeJsonEncode'=>false));
+				$fb->setOptions(array('useNativeJsonEncode'=>false));
 				$fb->setEnabled(true);
+
 				set_error_handler(array('TYPOlightDebug','errorHandler'));
 				error_reporting(E_ALL);
 				ini_set('display_errors', true);
@@ -414,13 +416,14 @@ class TYPOlightDebug
 
 	public static function group($name, $options=false)
 	{
-		if($name)
+		if(!$name)
 		{
-			if(!$options)
-				$options=array('Collapsed' => true);
-			self::$fb->group($name, $options);
-			array_push(self::$inGroup, $name);
+			$name='level '.count(self::$inGroup);
 		}
+		if(!$options)
+			$options=array('Collapsed' => true);
+		self::$fb->group($name);//, $options - options are buggy in firePHP.
+		array_push(self::$inGroup, $name);
 	}
 
 	public static function groupEnd()
