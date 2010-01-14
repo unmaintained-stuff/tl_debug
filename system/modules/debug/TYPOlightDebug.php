@@ -145,15 +145,23 @@ class TYPOlightDebug
 		return self::$fb ? true : false;
 	}
 
+	public static function shutDownArrayHandlers()
+	{
+		if($GLOBALS['TL_CONFIG'] instanceof TYPOlightDebugConfig)
+		{
+			$GLOBALS['TL_CONFIG']=(array)$GLOBALS['TL_CONFIG'];
+			$GLOBALS['TL_CONFIG']['debugMode']=false;
+			unset($GLOBALS['TL_DEBUG']);
+		}
+	}
+
 	/*
 	 * this function will get called right before TYPOlight exits. We have to "cleanup" 
 	 * (iow: prevent TYPOlight from dumping the debugdata on its own) in here.
 	 */
 	public function ProcessDebugData($strBuffer, $strTemplate)
 	{
-		$GLOBALS['TL_CONFIG']=(array)$GLOBALS['TL_CONFIG'];
-		$GLOBALS['TL_CONFIG']['debugMode']=false;
-		unset($GLOBALS['TL_DEBUG']);
+		self::shutDownArrayHandlers();
 		return $strBuffer;
 	}
 
@@ -163,6 +171,7 @@ class TYPOlightDebug
 	 */
 	public static function shutDown()
 	{
+		self::shutDownArrayHandlers();
 		//self::$fb->setProcessorUrl(Environment::getInstance()->base . 'system/modules/debug/html/RequestProcessor.js');
 		//$this->setRendererUrl($URL);
 		if ($error = error_get_last())
@@ -284,6 +293,7 @@ class TYPOlightDebug
 					self::skipNoticesInFile(TL_ROOT.'/system/modules/backend/dca');
 					self::skipNoticesInFile(TL_ROOT.'/system/modules/frontend');
 					self::skipNoticesInFile(TL_ROOT.'/system/drivers/DC_File.php');
+					self::skipNoticesInFile(TL_ROOT.'/system/drivers/DC_Folder.php');
 					self::skipNoticesInFile(TL_ROOT.'/system/drivers/DC_Table.php');
 					self::skipNoticesInFile(TL_ROOT.'/system/drivers/DB_Mysqli.php');
 					
