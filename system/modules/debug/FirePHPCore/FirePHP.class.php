@@ -617,10 +617,11 @@ class FirePHP {
 		$this->skipFiles[]=$filename;
 	}
 
-	protected function hideFromTrace($trace)
+	protected function cleanTrace($trace, $Object='')
 	{
 		$ret=array();
 		$idx=0;
+		/*
 		for($i=0;$i<sizeof($trace);$i++)
 		{
 			if(
@@ -643,6 +644,62 @@ class FirePHP {
 				$ret[$idx++]=&$trace[$i];
 			}
 		}
+		*/
+		for($i=0;$i<count($trace);$i++)
+		{
+			// check if it is some firePHP file we are issuing.
+			
+			// check if it is the TYPOlight debugger.
+			if(isset($trace[$i]['file'])
+					&& ((substr($trace[$i]['file'],-18,18)=='TYPOlightDebug.php')
+						|| (substr($trace[$i]['file'],-23,23)=='TYPOlightDebugArray.php' && $trace[$i]['function']!='offsetSet')
+						|| (substr($trace[$i]['file'],-24,24)=='TYPOlightDebugConfig.php' && $trace[$i]['function']!='offsetSet'))
+			)
+			continue;
+
+			if(isset($trace[$i]['class']) && ($trace[$i]['class']=='TYPOlightDebug'))
+			{
+				if($trace[$i]['function']=='errorHandler')
+				{
+					$trace[$i]['function']='--HERE--';
+					unset($trace[$i]['class']);
+					$trace[$i]['args']=array();
+				} else if(substr($trace[$i]['file'],-14,14)=='TYPOlightDebug')
+					continue;
+				else {
+					unset($trace[$i]['class']);
+					if(isset($trace[$i]['args']) && count($trace[$i]['args'])>=2)
+					$trace[$i]['args']=array($trace[$i]['args'][0],$trace[$i]['args'][1]);
+				}
+			}
+
+			if(isset($trace[$i]['class']) && $trace[$i]['class']=='TYPOlightDebugArray')
+			{
+				if($trace[$i]['function']=='offsetSet')
+				{
+					$trace[$i]['function']='TL_DEBUG';
+					$trace[$i]['args']=array_splice($trace[$i]['args'],1);
+					unset($trace[$i]['class']);
+				} else
+					continue;
+			}
+			if(isset($trace[$i]['class']) && $trace[$i]['class']=='TYPOlightDebugConfig')
+			{
+				if($trace[$i]['function']=='offsetSet')
+				{
+					$trace[$i]['function']='$GLOBALS[\'TL_CONFIG\'][\''.$trace[$i]['args'][0].'\']=';
+					unset($trace[$i]['object']);
+					$trace[$i]['args']=array_splice($trace[$i]['args'],1);
+					unset($trace[$i]['class']);
+				} else
+					continue;
+			}
+
+			// keep this entry in the stack.
+			$ret[$idx++]=$trace[$i];
+		}
+		//return $trace;
+		
 		return $ret;
 	}
 	// end change c.schiffler: check if the file, class or class+function is mentioned in the hide options.
@@ -723,7 +780,7 @@ class FirePHP {
       
       $trace = $Object->getTrace();
 		// change c.schiffler: check if the file, class or class+function is mentioned in the hide options.
-		$trace=$this->hideFromTrace($trace);
+		$trace=$this->cleanTrace($trace);
       if($Object instanceof ErrorException
          && isset($trace[0]['function'])
          && $trace[0]['function']=='errorHandler'
@@ -765,123 +822,24 @@ class FirePHP {
     if($Type==self::TRACE) {
       
       $trace = debug_backtrace();
+		// change c.schiffler: check if the file, class or class+function is mentioned in the hide options.
+		$fromTrace=(isset($trace[1]['class']) && isset($trace[1]['file']) && $trace[1]['class']=='FirePHP' && ($trace[1]['function']=='trace'));
+		$trace=$this->cleanTrace($trace, $Object);
+		// end change c.schiffler: check if the file, class or class+function is mentioned in the hide options.
       if(!$trace) return false;
-		// change c.schiffler: check if the file, class or class+function is mentioned in the hide options.
-		$trace=$this->hideFromTrace($trace);
-      for( $i=0 ; $i<sizeof($trace) ; $i++ ) {
-		// change c.schiffler: check if the file, class or class+function is mentioned in the hide options.
-		while(
-			(isset($trace[$i+1]['file'])
-				&& ((substr($trace[$i+1]['file'],-18,18)=='TYPOlightDebug.php')
-					|| (substr($trace[$i+1]['file'],-23,23)=='TYPOlightDebugArray.php')
-					|| (substr($trace[$i+1]['file'],-24,24)=='TYPOlightDebugConfig.php')))
-			|| (isset($trace[$i+1]['class']) && substr($trace[$i+1]['class'],0,14)=='TYPOlightDebug')
-		)$i++;
-		// end change c.schiffler: check if the file, class or class+function is mentioned in the hide options.
-		
-        if(isset($trace[$i]['class'])
-           && isset($trace[$i]['file'])
-           && ($trace[$i]['class']=='FirePHP'
-               || $trace[$i]['class']=='FB')
-           && (substr($this->_standardizePath($trace[$i]['file']),-18,18)=='FirePHPCore/fb.php'
-               || substr($this->_standardizePath($trace[$i]['file']),-29,29)=='FirePHPCore/FirePHP.class.php')
-		   ) {
-          /* Skip - FB::trace(), FB::send(), $firephp->trace(), $firephp->fb() */
-        } else
-        if(isset($trace[$i]['class'])
-           && isset($trace[$i+1]['file'])
-           && $trace[$i]['class']=='FirePHP'
-           && substr($this->_standardizePath($trace[$i+1]['file']),-18,18)=='FirePHPCore/fb.php') {
-          /* Skip fb() */
-        } else
-        if($trace[$i]['function']=='fb'
-           //|| $trace[$i]['function']=='trace'
-           || $trace[$i]['function']=='send'
-			/* skip TYPOlight debugger */
-		   || (isset($trace[$i]['file']) 
-				&& (
-					(substr($this->_standardizePath($trace[$i]['file']),-18,18)=='TYPOlightDebug.php')
-					|| (substr($this->_standardizePath($trace[$i]['file']),-23,23)=='TYPOlightDebugArray.php')
-					))
-           || (isset($trace[$i]['class']) && (($trace[$i]['function']=='offsetSet' && $trace[$i]['class']=='TYPOlightDebugArray')
-           || ($trace[$i]['function']=='offsetSet' && $trace[$i]['class']=='TYPOlightDebugConfig')
-           || ($trace[$i]['function']=='errorHandler' && $trace[$i]['class']=='TYPOlightDebug')))
-		   ) {
-		// change c.schiffler: check if the file, class or class+function is mentioned in the hide options.
-			if($trace[$i]['function']=='offsetSet')
-			{
-				if($trace[$i]['class']=='TYPOlightDebugArray')
-				{
-					$trace[$i]['function']='TL_DEBUG';
-				} else if($trace[$i]['class']=='TYPOlightDebugConfig')
-				{
-					$trace[$i]['function']='$GLOBALS[\'TL_CONFIG\'][\''.$trace[$i]['args'][0].'\']=';
-					unset($trace[$i]['object']);
-				}
-				$trace[$i]['args']=array_splice($trace[$i]['args'],1);
-				unset($trace[$i]['class']);
-			}
-			if($trace[$i]['function']=='errorHandler')
-			{
-				if(empty($trace[$i]['file']))
-				{
-					$i++;
-				}
-				else
-				{
-					$trace[$i]['function']='';
-					unset($trace[$i]['class']);
-					$trace[$i]['args']=array();
-				}
-				$trace[$i]['msg']=$Object;
-				// clean out the object part in this trace as we have no ability to "view" it in FireBug (currently).
-				for($j=$i;$j<count($trace);$j++)
-					unset($trace[$j]['object']);
-			}
-			if($trace[$i]['function']=='ProcessHook')
-			{
-				$i++;
-				$trace[$i]['class']='HOOK';
-			}
-		// end change c.schiffler: check if the file, class or class+function is mentioned in the hide options.
-
+	  $i=1;
           $Object = array('Class'=>isset($trace[$i]['class'])?$trace[$i]['class']:'',
                           'Type'=>isset($trace[$i]['type'])?$trace[$i]['type']:'',
                           'Function'=>isset($trace[$i]['function'])?$trace[$i]['function']:'',
-                          'Message'=>(isset($trace[$i]['args'])&& count($trace[$i]['args']) ? $trace[$i]['args'][0] : '...'),
+                          'Message'=> $fromTrace ? $Object : (isset($trace[$i]['args'])&& count($trace[$i]['args']) ? $trace[$i]['args'][0] : '...'),
                           'File'=>isset($trace[$i]['file'])?$this->_escapeTraceFile($trace[$i]['file']):'',
                           'Line'=>isset($trace[$i]['line'])?$trace[$i]['line']:'',
                           'Args'=>isset($trace[$i]['args'])?$this->encodeObject($trace[$i]['args']):'',
                           'Trace'=>$this->_escapeTrace(array_splice($trace,$i+1)));
-		// change c.schiffler: check if the file, class or class+function is mentioned in the hide options.
-			if(isset($trace[$i]['msg']))
-			{
-				if(!empty($trace[$i-1]['file']))
-				{
-					$Object['Type']='throw';
-					$Object['Message']=$trace[$i]['msg'];
-					unset($Object['Args']);
-				}
-			}
-			if(isset($trace[$i]['class']) && $trace[$i]['class']=='HOOK')
-			{
-				$Object['Type']='::';
-				$Object['Message']='trace for ' . $trace[$i]['function'];
-			}
-			if(isset($trace[$i]['function']) && substr($trace[$i]['function'],0,9)=='$GLOBALS[')
-			{
-				$Object['Type']='=';
-				$Object['Message']=$trace[$i]['function'].((string)($trace[$i]['args'][0]));
-
-			}
-			
 		// end change c.schiffler: check if the file, class or class+function is mentioned in the hide options.
           $skipFinalObjectEncode = true;
           $meta['file'] = isset($trace[$i]['file'])?$this->_escapeTraceFile($trace[$i]['file']):'';
           $meta['line'] = isset($trace[$i]['line'])?$trace[$i]['line']:'';
-          break;
-        }
-      }
     } else
     if($Type==self::TABLE) {
       
@@ -911,53 +869,10 @@ class FirePHP {
 
         $trace = debug_backtrace();
 		// change c.schiffler: check if the file, class or class+function is mentioned in the hide options.
-		$trace=$this->hideFromTrace($trace);
-        for( $i=0 ; $trace && $i<sizeof($trace) ; $i++ ) {
+		$trace=$this->cleanTrace($trace);
 		// change c.schiffler: check if the file, class or class+function is mentioned in the hide options.
-		while(
-			(isset($trace[$i+1]['file'])
-				&& ((substr($trace[$i+1]['file'],-18,18)=='TYPOlightDebug.php')
-					|| (substr($trace[$i+1]['file'],-23,23)=='TYPOlightDebugArray.php')
-					|| (substr($trace[$i+1]['file'],-24,24)=='TYPOlightDebugConfig.php')))
-			|| (isset($trace[$i+1]['class']) && substr($trace[$i+1]['class'],-14,14)=='TYPOlightDebug')
-		)
-			$i++;
-		// end change c.schiffler: check if the file, class or class+function is mentioned in the hide options.
-          if(isset($trace[$i]['class'])
-             && isset($trace[$i]['file'])
-             && ($trace[$i]['class']=='FirePHP'
-                 || $trace[$i]['class']=='FB')
-             && (substr($this->_standardizePath($trace[$i]['file']),-18,18)=='FirePHPCore/fb.php'
-                 || substr($this->_standardizePath($trace[$i]['file']),-29,29)=='FirePHPCore/FirePHP.class.php')) {
-            /* Skip - FB::trace(), FB::send(), $firephp->trace(), $firephp->fb() */
-          } else
-          if(isset($trace[$i]['class'])
-             && isset($trace[$i+1]['file'])
-             && $trace[$i]['class']=='FirePHP'
-             && substr($this->_standardizePath($trace[$i+1]['file']),-18,18)=='FirePHPCore/fb.php') {
-            /* Skip fb() */
-          } else
-
-//          if(isset($trace[$i]['file'])
-//             && substr($this->_standardizePath($trace[$i]['file']),-18,18)=='FirePHPCore/fb.php') {
-			/* skip TYPOlight debugger */
-		   if((isset($trace[$i]['file']) 
-				&& ((substr($this->_standardizePath($trace[$i]['file']),-18,18)=='FirePHPCore/fb.php')
-					|| (substr($this->_standardizePath($trace[$i]['file']),-18,18)=='TYPOlightDebug.php')
-					|| (substr($this->_standardizePath($trace[$i]['file']),-23,23)=='TYPOlightDebugArray.php')
-					))
-           || (isset($trace[$i]['class']) && (($trace[$i]['function']=='offsetSet' && $trace[$i]['class']=='TYPOlightDebugArray')
-           || ($trace[$i]['function']=='offsetSet' && $trace[$i]['class']=='TYPOlightDebugConfig')
-           || ($trace[$i]['function']=='errorHandler' && $trace[$i]['class']=='TYPOlightDebug')))
-		   ) {
-            /* Skip FB::fb() */
-          } else {
-            $meta['file'] = isset($trace[$i]['file'])?$this->_escapeTraceFile($trace[$i]['file']):'';
-            $meta['line'] = isset($trace[$i]['line'])?$trace[$i]['line']:'';
-            break;
-          }
-        }      
-      
+        $meta['file'] = isset($trace[1]['file'])?$this->_escapeTraceFile($trace[1]['file']):'';
+        $meta['line'] = isset($trace[1]['line'])?$trace[1]['line']:'';
       }
     } else {
       unset($meta['file']);
@@ -1116,7 +1031,7 @@ class FirePHP {
     if(function_exists('json_encode')
        && $this->options['useNativeJsonEncode']!=false) {
 
-      return json_encode($Object);
+      return @json_encode($Object);
     } else {
       return $this->json_encode($Object);
     }

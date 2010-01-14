@@ -92,12 +92,17 @@ class TYPOlightDebug
 	/*
 	 * combined bitmask of errors we want to handle.
 	 */
-	protected static $inGroup=false;
+	protected static $inGroup=array();
 
 	/*
 	 * combined bitmask of errors we want to handle.
 	 */
 	protected static $ticks=0;
+
+	/*
+	 * keeps the error message for recursions which we want to omit.
+	 */
+	protected static $WarnRecursion='';
 
 	/*
 	 * function to implode an array using name:value pairs in logging instead of just using the value.
@@ -230,7 +235,7 @@ class TYPOlightDebug
 			if($fb->detectClientExtension())
 			{
 				// native encoding dumps way too many notices. Very bad when within error handler, as we can not capture it then.
-				$fb->setOptions(array('useNativeJsonEncode'=>false));
+				//$fb->setOptions(array('useNativeJsonEncode'=>false));
 				$fb->setEnabled(true);
 				set_error_handler(array('TYPOlightDebug','errorHandler'));
 				error_reporting(E_ALL);
@@ -262,6 +267,7 @@ class TYPOlightDebug
 					self::skipNoticesInFile(TL_ROOT.'/system/libraries/Controller.php');
 					self::skipNoticesInFile(TL_ROOT.'/system/libraries/Database.php');
 					self::skipNoticesInFile(TL_ROOT.'/system/libraries/Input.php');
+					self::skipNoticesInFile(TL_ROOT.'/system/libraries/Model.php');
 					self::skipNoticesInFile(TL_ROOT.'/system/libraries/Session.php');
 					self::skipNoticesInFile(TL_ROOT.'/system/libraries/Search.php');
 					self::skipNoticesInFile(TL_ROOT.'/system/libraries/System.php');
@@ -298,6 +304,15 @@ class TYPOlightDebug
 				$GLOBALS['TL_HOOKS']['outputFrontendTemplate'][]=array('TYPOlightDebug', 'ProcessDebugData');
 				$GLOBALS['TL_HOOKS']['outputBackendTemplate'][]=array('TYPOlightDebug', 'ProcessDebugData');
 
+				if(array_key_exists('OS', $_ENV) && strpos($_ENV['OS'], 'Windows')!== false)
+				{
+					self::$WarnRecursion='recursion detected in '.TL_ROOT.'\system\modules\debug\FirePHPCore\FirePHP.class.php on line ';
+					self::warn('Windows support is experimental.');
+				}
+				else
+					self::$WarnRecursion='recursion detected in '.TL_ROOT.'/system/modules/debug/FirePHPCore/FirePHP.class.php on line ';
+				
+
 				self::group('Execution evironment');
 				if(function_exists('posix_getpwuid') && function_exists('posix_geteuid') && function_exists('get_current_user'))
 				{
@@ -311,6 +326,7 @@ class TYPOlightDebug
 				self::info((isset($_GET) && count($_GET) ? $_GET : NULL), '$_GET data');
 				self::info((isset($_POST) && count($_POST) ? $_POST : NULL), '$_POST data');
 				self::info((isset($_SESSION) && count($_SESSION) ? $_SESSION : NULL), '$_SESSION data');
+				self::info((isset($_ENV) && count($_ENV) ? $_ENV : NULL), '$_ENV data');
 				$const=get_defined_constants(true);
 				self::info($const['user'], 'CONST(app context)');
 				self::groupEnd();
@@ -373,7 +389,7 @@ class TYPOlightDebug
 		}
 	}
 
-	protected static function dispatch($method, $message, $label=NULL, $addtrace=false)
+	protected static function fb($method, $message, $label=NULL, $addtrace=false)
 	{
 		if(self::checkSize())
 		{
@@ -384,58 +400,55 @@ class TYPOlightDebug
 				$addtrace=$label;
 				$label=NULL;
 			}
-			if($addtrace && !(self::$inGroup))
-				self::$fb->group(($label ? $label : $message), array('Collapsed'=>true));
-			self::$fb->info($message, $label);
 			if($addtrace)
 			{
+				self::group(($label ? $label : $message), array('Collapsed'=>true));
+				self::$fb->$method($message, $label);
 				self::$fb->trace('{{trace}}');
-				if(!(self::$inGroup))
-				self::$fb->groupEnd(($label ? $label : $message));
+				self::groupEnd();
+			} else {
+				self::$fb->$method($message, $label);
 			}
 		}
 	}
 
 	public static function group($name, $options=false)
 	{
-		if(self::$inGroup)
-			return;
 		if($name)
 		{
 			if(!$options)
 				$options=array('Collapsed' => true);
 			self::$fb->group($name, $options);
-			self::$inGroup=$name;
+			array_push(self::$inGroup, $name);
 		}
 	}
 
 	public static function groupEnd()
 	{
-		if(self::$inGroup)
+		if(array_pop(self::$inGroup))
 		{
 			self::$fb->groupEnd();
-			self::$inGroup=false;
 		}
 	}
 
 	public static function log($message, $label=NULL, $addtrace=false)
 	{
-		self::dispatch('log', $message, $label, $addtrace);
+		self::fb('log', $message, $label, $addtrace);
 	}
 
 	public static function info($message, $label=NULL, $addtrace=false)
 	{
-		self::dispatch('info', $message, $label, $addtrace);
+		self::fb('info', $message, $label, $addtrace);
 	}
 
 	public static function warn($message, $label=NULL, $addtrace=false)
 	{
-		self::dispatch('warn', $message, $label, $addtrace);
+		self::fb('warn', $message, $label, $addtrace);
 	}
 
 	public static function error($message, $label=NULL, $addtrace=false)
 	{
-		self::dispatch('error', $message, $label, $addtrace);
+		self::fb('error', $message, $label, $addtrace);
 	}
 
 
@@ -475,7 +488,7 @@ class TYPOlightDebug
 				case E_USER_WARNING:
 				case E_DEPRECATED: 
 				case E_USER_DEPRECATED: 
-					if(strpos($errstr, 'json_encode()')===false && strpos($errstr, 'recursion detected in '.TL_ROOT.'/plugins/FirePHPCore-0.3.1/lib/FirePHPCore/FirePHP.class.php')===false)
+					if(strpos($errstr, 'json_encode()')===false && strpos($errstr, self::$WarnRecursion)===false)
 						self::warn(self::$severity[$errno] . ':' . $errstr . $location, true);
 					break;
 				case E_ERROR:
