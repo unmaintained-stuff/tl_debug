@@ -317,7 +317,7 @@ class TYPOlightDebug
 				$GLOBALS['TL_HOOKS']['outputFrontendTemplate'][]=array('TYPOlightDebug', 'ProcessDebugData');
 				$GLOBALS['TL_HOOKS']['outputBackendTemplate'][]=array('TYPOlightDebug', 'ProcessDebugData');
 
-				if(array_key_exists('OS', $_ENV) && strpos($_ENV['OS'], 'Windows')!== false)
+				if(DIRECTORY_SEPARATOR != '/')
 				{
 					self::$WarnRecursion='recursion detected in '.TL_ROOT.'\system\modules\debug\FirePHPCore\FirePHP.class.php on line ';
 					self::warn('Windows support is experimental.');
@@ -372,6 +372,8 @@ class TYPOlightDebug
 
 	public static function skipNoticesInFile($filename)
 	{
+		if(DIRECTORY_SEPARATOR != '/')
+			$filename=str_replace('/','\\', $filename);
 		self::$skipFiles[]=$filename;
 	}
 

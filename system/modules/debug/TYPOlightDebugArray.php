@@ -62,19 +62,19 @@ class TYPOlightDebugArray extends ArrayObject
 						$file=str_replace(TL_ROOT, '', $this->path($traces[$i+1]['file']));
 				}
 			}
-			// only log database queries that are allowed, according to our settings.
-			if(preg_match('#/system/modules/([^/]+)/#', $file, $names))
-			{
-				if(!(array_key_exists('logDatabaseModules', $GLOBALS['TL_CONFIG']) && $GLOBALS['TL_CONFIG']['logDatabaseModules'] && in_array($names[1],deserialize($GLOBALS['TL_CONFIG']['logDatabaseModules']))))
-				return true;
-			} else {
-				// not from module directory, should be core then
-				if(!(array_key_exists('logDatabaseModules', $GLOBALS['TL_CONFIG']) && $GLOBALS['TL_CONFIG']['logDatabaseModules'] && in_array('core',deserialize($GLOBALS['TL_CONFIG']['logDatabaseModules']))))
-				return true;
-			}
-			// log and exit if it was a database query.
 			if($file !== '')
 			{
+				// only log database queries that are allowed, according to our settings.
+				if(preg_match('#/system/modules/([^/]+)/#', $file, $names))
+				{
+					if(!(array_key_exists('logDatabaseModules', $GLOBALS['TL_CONFIG']) && $GLOBALS['TL_CONFIG']['logDatabaseModules'] && in_array($names[1],deserialize($GLOBALS['TL_CONFIG']['logDatabaseModules']))))
+					return true;
+				} else {
+					// not from module directory, should be core then
+					if(!(array_key_exists('logDatabaseModules', $GLOBALS['TL_CONFIG']) && $GLOBALS['TL_CONFIG']['logDatabaseModules'] && in_array('core',deserialize($GLOBALS['TL_CONFIG']['logDatabaseModules']))))
+					return true;
+				}
+				// log and exit.
 				TYPOlightDebug::info($value, 'Database Query: ' . ($key ? $key : substr($value[0], 0, 80).'...'), true);
 				return true;
 			}
