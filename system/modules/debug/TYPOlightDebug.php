@@ -41,7 +41,7 @@ class TYPOlightDebug
 	 * maximum amount of debug data allowed to be sent to the client.
 	 * this is not required but suggested, as many proxies and anti virus software can not process large HTTP headers.
 	 */
-	protected static $maxsize=8000000; // we want to stop after at most 8megabytes. this will kill the browser otherwise.
+	protected static $maxsize=8000000; // we want to stop after at most 8megabytes. This will most likely kill the browser otherwise.
 	/*
 	 * logic flag if the size has been exceeded.
 	 */
@@ -353,7 +353,7 @@ class TYPOlightDebug
 				$const=get_defined_constants(true);
 				self::info($const['user'], 'CONST(app context)');
 				self::groupEnd();
-				self::log('TYPOlight debugger active');
+				self::log('TYPOlight debugger active (visit: http://www.cyberspectrum.de/ for the manual)');
 				// finally set up the tick counter.
 				self::$ticks=0;
 				register_tick_function(array('TYPOlightDebug', 'tick_handler'));
@@ -442,7 +442,9 @@ class TYPOlightDebug
 			}
 			if(!$options)
 				$options=array('Collapsed' => true);
-			self::$fb->group($name);//, $options - options are buggy in firePHP.
+			// options are buggy in firePHP.
+			// we therefore ignore the options.
+			self::$fb->group($name /* ,$options */);
 			array_push(self::$inGroup, $name);
 		}
 	}
@@ -512,7 +514,7 @@ class TYPOlightDebug
 				case E_NOTICE:
 				case E_USER_NOTICE:
 				case E_STRICT:
-					self::log(self::$severity[$errno] . ':' . $errstr . $location/*, true*/);
+					self::log(self::$severity[$errno] . ':' . $errstr . $location);
 					break;
 				case E_CORE_WARNING:
 				case E_COMPILE_WARNING: 
@@ -547,6 +549,7 @@ class TYPOlightDebug
 		'undefinedIndex'=>'Undefined index:', 
 		'undefinedOffset'=>'Undefined offset:',
 		'propertyNonObject'=>'Trying to get property of non-object',
+		'constantAlreadyDefined'=>'already defined in ',
 	);
 
 	protected static function filterError($errno, $errstr, $errfile, $errline, $errcontext)
@@ -824,7 +827,7 @@ class TYPOlightDebugHookCatcher
 	protected function ProcessHook($hookname, $params)
 	{
 		$cnt=count($GLOBALS['TL_HOOKS'][$hookname])-2;
-		if($cnt)
+		if($cnt>0)
 		{
 			$lasthook=end(self::$hookstack);
 			if($lasthook===$hookname)
@@ -854,7 +857,7 @@ class TYPOlightDebugHookCatcher
 		{
 			if(!in_array($v, array('__call','ProcessHook','getHooks')))
 			{
-				$res[$v]=((array_key_exists($v, $GLOBALS['TL_LANG']['tl_debug']['logHookNames']) && $GLOBALS['TL_LANG']['tl_debug']['logHookNames'][$v]) ? $GLOBALS['TL_LANG']['tl_debug']['logHookNames'][$v] : $v);
+				$res[$v]=((array_key_exists($v, $GLOBALS['TL_LANG']['tl_debug']['logHookNames']) && $GLOBALS['TL_LANG']['tl_debug']['logHookNames'][$v]) ? $GLOBALS['TL_LANG']['tl_debug']['logHookNames'][$v] : 'non core HOOK: ' . $v);
 			}
 		}
 		return $res;

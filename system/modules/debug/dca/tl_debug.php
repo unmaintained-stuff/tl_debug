@@ -82,7 +82,7 @@ $GLOBALS['TL_DCA']['tl_debug'] = array
 		(
 			'label'                   => &$GLOBALS['TL_LANG']['tl_debug']['showNotices'],
 			'inputType'               => 'checkbox',
-			'options'                 => array('undefinedIndex', 'propertyNonObject', 'undefinedOffset'),
+			'options'                 => array('undefinedIndex' => $GLOBALS['TL_LANG']['tl_debug']['undefinedIndex'], 'propertyNonObject' => $GLOBALS['TL_LANG']['tl_debug']['propertyNonObject'], 'undefinedOffset' => $GLOBALS['TL_LANG']['tl_debug']['undefinedOffset'], 'constantAlreadyDefined' => $GLOBALS['TL_LANG']['tl_debug']['constantAlreadyDefined']),
 			'eval'                    => array('multiple' => true, 'tl_class'=>'')
 		),
 		'logErrors' => array

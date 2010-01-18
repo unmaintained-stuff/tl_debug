@@ -45,7 +45,9 @@ class TYPOlightDebugArray extends ArrayObject
 	{
 		$file='';
 		$i=0;
-		if(is_array($value) && (count($value)>=2) && ((is_string($value[1]) && ((strpos($value[1],'rows returned')!==false) || (strpos($value[1], 'rows affected')!==false)))))
+		if(is_array($value) && (count($value)>=2) && 
+									  ((isset($value[1]) && 
+														 ((strpos($value[1],'rows returned')!==false) || (strpos($value[1], 'rows affected')!==false)))))
 		{
 			// logging of statements disabled? exit!
 			if(!(array_key_exists('logDatabase', $GLOBALS['TL_CONFIG']) && $GLOBALS['TL_CONFIG']['logDatabase']))
@@ -107,7 +109,7 @@ class TYPOlightDebugArray extends ArrayObject
 
 	public function offsetSet ($p_key, $p_value)
 	{
-		if($p_key==NULL && $this->channel)
+		if($p_key===NULL && $this->channel!==NULL)
 		{
 			$p_key=$this->channel;
 			$this->channel=NULL;

@@ -31,51 +31,51 @@
  * Fields
  */
 
-$GLOBALS['TL_LANG']['tl_debug']['enableDebug']          = array('Debugger aktivieren', 'Wählen Sie diese Option, um den TYPOlight debugger zu aktivieren. Die Performance der Seite wird durch den Debugger etwas beeinträchtigt.');
-$GLOBALS['TL_LANG']['tl_debug']['enableDebugMember']    = array('Frontend-Benutzerauswahl', 'Wählen Sie bitte alle Frontend-Benutzer aus, für die der TYPOlight debugger aktiviert werden soll.');
-$GLOBALS['TL_LANG']['tl_debug']['enableDebugUser']      = array('Backend-Benutzerauswahl', 'Wählen Sie bitte alle Benutzer aus, für die der TYPOlight debugger aktiviert werden soll.');
+$GLOBALS['TL_LANG']['tl_debug']['enableDebug']          = array('Debugger active', 'Please select this to enable the TYPOlight debugger. This will have an impact on the performance of the site for enabled users.');
+$GLOBALS['TL_LANG']['tl_debug']['enableDebugMember']    = array('Frontend-user selection', 'Please select all frontend users (members) for who the debugger shall be active.');
+$GLOBALS['TL_LANG']['tl_debug']['enableDebugUser']      = array('Backend-user selection', 'Please select all backend users for who the debugger shall be active.');
 
-$GLOBALS['TL_LANG']['tl_debug']['hideCoreNotices']      = array('Fehlermeldungen und Notices aus dem Core verstecken', 'Wählen Sie diese Option, um alle Meldungen, welche aus dem core generiert werden im Log zu unterdrücken.');
-$GLOBALS['TL_LANG']['tl_debug']['showNotices']          = array('Notices finetuning', 'Hier können Sie spezielle Arten von Notices explizit an oder abschalten.');
+$GLOBALS['TL_LANG']['tl_debug']['hideCoreNotices']      = array('Hide notices issued from the core', 'Please select this option to hide all notices coming from core files from the log.');
+$GLOBALS['TL_LANG']['tl_debug']['showNotices']          = array('Notice finetuning', 'Here you can select what notices you want to be shown.');
 
-$GLOBALS['TL_LANG']['tl_debug']['logErrors']            = array('Fehleranzeige konfigurieren', 'Bitte wählen Sie hier die gewünschten errorlevel aus, die in der Protokollierung enthalten sein sollen.');
-$GLOBALS['TL_LANG']['tl_debug']['logHooks']             = array('Hooks verfolgen', 'Wählen Sie diese Option, um HOOKs zu verfolgen.');
-$GLOBALS['TL_LANG']['tl_debug']['logHookSelection']     = array('aktive Hooks', 'Wählen Sie die HOOKs aus, die verfolgt werden sollen.');
+$GLOBALS['TL_LANG']['tl_debug']['logErrors']            = array('Error level selection', 'Please select the errors you want to have in your debug log.');
+$GLOBALS['TL_LANG']['tl_debug']['logHooks']             = array('Trace HOOKs', 'Select this option to enable the tracing of HOOKs.');
+$GLOBALS['TL_LANG']['tl_debug']['logHookSelection']     = array('Selected HOOKs for tracing', 'Please select all HOOKs, you want to have traced.');
 
-$GLOBALS['TL_LANG']['tl_debug']['logDatabase']          = array('Datenbank Statements loggen', 'Wählen Sie diese Option, um die Ausführung von Datenbankabfragen zu verfolgen.');
-$GLOBALS['TL_LANG']['tl_debug']['logDatabaseModules']   = array('Datenbankabfragen nur in folgenden Modulen verfolgen', 'Wählen Sie alle Module, in welchen die Ausführung von Datenbankabfragen verfolgt werden soll.');
+$GLOBALS['TL_LANG']['tl_debug']['logDatabase']          = array('Log Database statements', 'Select this option to enable the logging of database statements.');
+$GLOBALS['TL_LANG']['tl_debug']['logDatabaseModules']   = array('Log Database statements from the following modules.', 'Please select all modules you want the database statements traced from.');
 
 /**
  * Legends
  */
-$GLOBALS['TL_LANG']['tl_debug']['base_legend']          = 'Allgemeine Einstellungen';
-$GLOBALS['TL_LANG']['tl_debug']['debugdata_legend']     = 'Zu protokollierende Daten';
+$GLOBALS['TL_LANG']['tl_debug']['base_legend']          = 'Common settings';
+$GLOBALS['TL_LANG']['tl_debug']['debugdata_legend']     = 'Data selection';
 
 /**
  * References
  */
-$GLOBALS['TL_LANG']['tl_debug']['edit']                 = 'Debugger einstellen.';
+$GLOBALS['TL_LANG']['tl_debug']['edit']                 = 'Configure the debugger.';
 $GLOBALS['TL_LANG']['tl_debug']['severity']             = array(
-	E_WARNING=>'Warnungen (E_WARNING)',
-	E_NOTICE=>'Hinweise (E_NOTICE)',
-	E_PARSE=>'Parse Fehler (E_PARSE)',
-	E_CORE_ERROR=>'PHP Core Fehler (E_CORE_ERROR)',
-	E_CORE_WARNING=>'PHP Core Warnungen (E_CORE_WARNING)',
-	E_COMPILE_ERROR=>'PHP Compiler Fehler (E_COMPILE_ERROR)',
-	E_COMPILE_WARNING=>'PHP Compiler Warnungen (E_COMPILE_WARNING)',
-	E_USER_ERROR=>'Benutzerdefinierte Fehler (E_USER_ERROR)',
-	E_USER_WARNING=>'Benutzerdefinierte Warnungen (E_USER_WARNING)',
-	E_USER_NOTICE=>'Benutzerdefinierte Hinweise (E_USER_NOTICE)',
-	E_STRICT=>'PHP strict Meldungen (E_STRICT)',
-	E_RECOVERABLE_ERROR=>'behebare Fehler (E_RECOVERABLE_ERROR)',
-	E_DEPRECATED=>'Veraltete Funktionen (E_DEPRECATED)',
-	E_USER_DEPRECATED=>'Benutzerdefinierte veraltete Funktionen (E_USER_DEPRECATED)',
+	E_WARNING=>'Warnings (E_WARNING)',
+	E_NOTICE=>'Notices (E_NOTICE)',
+	E_PARSE=>'Parse errors (E_PARSE)',
+	E_CORE_ERROR=>'PHP core errors (E_CORE_ERROR)',
+	E_CORE_WARNING=>'PHP core warnings (E_CORE_WARNING)',
+	E_COMPILE_ERROR=>'PHP compiler errors (E_COMPILE_ERROR)',
+	E_COMPILE_WARNING=>'PHP compiler warnings (E_COMPILE_WARNING)',
+	E_USER_ERROR=>'User generated errors (E_USER_ERROR)',
+	E_USER_WARNING=>'User generated warnings (E_USER_WARNING)',
+	E_USER_NOTICE=>'User generated notices (E_USER_NOTICE)',
+	E_STRICT=>'PHP strict messages (E_STRICT)',
+	E_RECOVERABLE_ERROR=>'recoverable errors (E_RECOVERABLE_ERROR)',
+	E_DEPRECATED=>'Notifies for deprecated functions (E_DEPRECATED)',
+	E_USER_DEPRECATED=>'User generated notifies for deprecated functions (E_USER_DEPRECATED)',
 );
 
-$GLOBALS['TL_LANG']['tl_debug']['undefinedIndex']         = 'Notices anzeigen, die sich auf undefinierte indizes beziehen (Undefined index: ...)';
-$GLOBALS['TL_LANG']['tl_debug']['undefinedOffset']        = 'Notices anzeigen, die sich auf undefinierte indizes beziehen (Undefined index: ...)';
-$GLOBALS['TL_LANG']['tl_debug']['propertyNonObject']      = 'Notices anzeigen, die sich auf das auslesen einer property eines Nicht-Objekts beziehen (Trying to get property of non-object)';
-$GLOBALS['TL_LANG']['tl_debug']['constantAlreadyDefined'] = 'Notices anzeigen, die sich auf doppelt definierte Konstanten beziehen (Constant XY already defined)';
+$GLOBALS['TL_LANG']['tl_debug']['undefinedIndex']         = 'Show notices resulting from undefined index (Undefined index: ...)';
+$GLOBALS['TL_LANG']['tl_debug']['undefinedOffset']        = 'Show notices resulting from undefined offset (Undefined offset: ...)';
+$GLOBALS['TL_LANG']['tl_debug']['propertyNonObject']      = 'Show notices resulting from property retrival of non objects (Trying to get property of non-object)';
+$GLOBALS['TL_LANG']['tl_debug']['constantAlreadyDefined'] = 'Show notices resulting from defining an already defined constant (Constant XY already defined)';
 
 $GLOBALS['TL_LANG']['tl_debug']['logHookNames']     = array(
 	'activateAccount'		=> 'activateAccount (triggered when a new front end account is activated)',
@@ -111,7 +111,6 @@ $GLOBALS['TL_LANG']['tl_debug']['logHookNames']     = array(
 	'reviseTable'			=> 'reviseTable (triggered when TYPOlight removes orphan records from a table)',
 	'setNewPassword'		=> 'setNewPassword (triggered after a new password has been set)',
 	'validateFormField'		=> 'validateFormField (triggered when a form field is submitted)',
-	
 	'loadDataContainer'		=> 'loadDataContainer (triggered when a data container get\'s loaded)',
 	'dispatchAjax'			=> 'dispatchAjax (triggered when a ajax request is issued)',
 );
