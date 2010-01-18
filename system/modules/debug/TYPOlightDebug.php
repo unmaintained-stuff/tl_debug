@@ -212,7 +212,7 @@ class TYPOlightDebug
 			self::$fb->info('Executed: ' . self::$ticks . ' PHP statements.');
 		} catch (Exception $e) {
 			// we can not log via headers anymore, echo the exception out then.
-			echo $e->getMessage();
+			echo 'Out of context Exception catched: ' . $e->getMessage();
 		}
 		if(self::$ob_started)
 			ob_end_flush();
@@ -442,6 +442,7 @@ class TYPOlightDebug
 			}
 			if(!$options)
 				$options=array('Collapsed' => true);
+			$name = str_replace("\n", '', $name);
 			// options are buggy in firePHP.
 			// we therefore ignore the options.
 			self::$fb->group($name /* ,$options */);
