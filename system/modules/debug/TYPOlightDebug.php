@@ -228,13 +228,13 @@ class TYPOlightDebug
 		{
 			$mayUseDebugger=false;
 			// pre checks if debugging is allowed.
-			if(BE_USER_LOGGED_IN && array_key_exists('enableDebugUser', $GLOBALS['TL_CONFIG']) && strlen($GLOBALS['TL_CONFIG']['enableDebugUser']))
+			if(array_key_exists('enableDebugUser', $GLOBALS['TL_CONFIG']) && strlen($GLOBALS['TL_CONFIG']['enableDebugUser']))
 			{
 				$uid=self::getLoginStatus('BE_USER_AUTH');
 				if($uid && count(array_intersect(deserialize($GLOBALS['TL_CONFIG']['enableDebugUser']), array($uid))))
 					$mayUseDebugger=true;
 			}
-			if($mayUseDebugger || (FE_USER_LOGGED_IN && array_key_exists('enableDebugMember', $GLOBALS['TL_CONFIG']) && strlen($GLOBALS['TL_CONFIG']['enableDebugMember'])))
+			if($mayUseDebugger || (array_key_exists('enableDebugMember', $GLOBALS['TL_CONFIG']) && strlen($GLOBALS['TL_CONFIG']['enableDebugMember'])))
 			{
 				$uid=self::getLoginStatus('FE_USER_AUTH');
 				if($uid && count(array_intersect(deserialize($GLOBALS['TL_CONFIG']['enableDebugMember']), array($uid))))
