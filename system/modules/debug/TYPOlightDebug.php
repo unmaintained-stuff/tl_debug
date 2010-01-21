@@ -126,13 +126,14 @@ class TYPOlightDebug
 	 */
 	protected static function getLoginStatus($strCookie)
 	{
-		$hash = sha1(session_id() . (!$GLOBALS['TL_CONFIG']['disableIpCheck'] ? Environment::getInstance()->ip : '') . $strCookie);
+		$ip = Environment::getInstance()->ip;
+		$hash = sha1(session_id() . (!$GLOBALS['TL_CONFIG']['disableIpCheck'] ? $ip : '') . $strCookie);
 		if (Input::getInstance()->cookie($strCookie) == $hash)
 		{
 			$objSession = Database::getInstance()->prepare("SELECT * FROM tl_session WHERE hash=? AND name=?")
 										 ->limit(1)
 										 ->execute($hash, $strCookie);
-			if ($objSession->numRows && $objSession->sessionID == session_id() && ($GLOBALS['TL_CONFIG']['disableIpCheck'] || $objSession->ip == Environment::getInstance()->ip) && ($objSession->tstamp + $GLOBALS['TL_CONFIG']['sessionTimeout']) > time())
+			if ($objSession->numRows && $objSession->sessionID == session_id() && ($GLOBALS['TL_CONFIG']['disableIpCheck'] || $objSession->ip == $ip) && ($objSession->tstamp + $GLOBALS['TL_CONFIG']['sessionTimeout']) > time())
 			{
 				return $objSession->pid;
 			}
@@ -171,6 +172,12 @@ class TYPOlightDebug
 	 */
 	public static function shutDown()
 	{
+		// restore TYPOlight handlers for exceptions and errors and hide them.
+		// NOTE: this explicitly hides an Exception originating from the database class, 
+		// which want's to close resources in it's destructor that are already closed.
+		set_error_handler('__error');
+		set_exception_handler('__exception');
+		ini_set('display_errors', false);
 		self::shutDownArrayHandlers();
 		//self::$fb->setProcessorUrl(Environment::getInstance()->base . 'system/modules/debug/html/RequestProcessor.js');
 		//$this->setRendererUrl($URL);
@@ -190,7 +197,6 @@ class TYPOlightDebug
 					}
 					self::error(self::$severity[$error['type']].' ' . $error['message'] . ' in file: ' . $error['file'] . ' on line ' . $error['line']);
 					self::error('active modules: ' . implode(', ',Config::getInstance()->getActiveModules()));
-					ini_set('display_errors', false);
 					show_help_message();
 					break;
 				default:;
