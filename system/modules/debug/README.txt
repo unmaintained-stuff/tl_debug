@@ -7,7 +7,6 @@ TYPOlight debugger
 3. Reporting bugs
 4. Known issues
 
-
 0. Preamble
 ==================
 Currently it was only possible to debug TYPOlight via print_r(), var_dump() and echo.
@@ -24,7 +23,7 @@ execution workflow.
 Feature requests are always welcome on the tracker (See reporting bugs).
 
 Thanks go out to Stefan "lindesbs" Lindecke for fruitful discussion
-and Leo Unglaub for allowing me to test on his XAMPP.
+and Leo Unglaub for allowing me to test on his XAMPP and long debugging sessions.
 
 I wish you fun with this extension.
 
@@ -97,4 +96,9 @@ in TYPOlight so we can hunt it down.
 One definate origin of this Exception is in the database drivers which try to close resources in their __destruct().
 The problem herein is, that those resources got already freed by PHP on it's own and therefore cause a warning and
 finally an Exception from within an destructor, which is illegal from within destructors.
-
+Update: I hope this Exception is finally tracked down and the bug squished. After long debugging hours with tracing 
+into php itself in CGI mode, we (leo-unglaub and I) found out that the creation order of objects in TYPOlight DOES 
+matter. Make sure you never request the database before instanciating the User (Backend or Frontend, whichever is 
+needed according to the mode). If you do so, the Database object will get freed before the User class can save back 
+it's Session data (why the session data is stored in PHP and the database is beyond my understanding though).
+To achieve this, the configuration now automatically writes itself into system/config/initconfig.php at the beginning.

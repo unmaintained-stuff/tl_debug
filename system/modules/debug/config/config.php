@@ -38,6 +38,6 @@ if (!defined('E_USER_DEPRECATED'))define('E_USER_DEPRECATED', 16384);
 $GLOBALS['BE_MOD']['development']['debugger'] = array
 	(
 		'tables'			=> array('tl_debug'),
-		'icon'				=> 'system/modules/debug/html/bug.png', 
+		'icon'				=> 'system/modules/debug/html/bug.png',
 	);
 ?>

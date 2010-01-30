@@ -55,7 +55,9 @@ $GLOBALS['TL_DCA']['tl_debug'] = array
 		(
 			'label'                   => &$GLOBALS['TL_LANG']['tl_debug']['enableDebug'],
 			'inputType'               => 'checkbox',
-			'eval'                    => array('tl_class'=>'')
+			'eval'                    => array('tl_class'=>''),
+			'load_callback'           => array(array('TYPOlightDebugHelper', 'loadDebuggerstate')),
+			'save_callback'           => array(array('TYPOlightDebugHelper', 'saveDebuggerstate')),
 		),
 		'enableDebugMember' => array
 		(
@@ -103,7 +105,7 @@ $GLOBALS['TL_DCA']['tl_debug'] = array
 		(
 			'label'                   => &$GLOBALS['TL_LANG']['tl_debug']['logHookSelection'],
 			'inputType'               => 'checkbox',
-			'options_callback'         => array('TYPOlightDebugHookCatcher','getHooks'),
+			'options_callback'         => array('TYPOlightDebugHelper','getHooks'),
 			'eval'                    => array('multiple' => true, 'tl_class'=>'')
 		),
 		'logDatabase' => array
