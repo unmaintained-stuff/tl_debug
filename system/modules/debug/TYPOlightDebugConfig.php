@@ -40,7 +40,6 @@ class TYPOlightDebugConfig extends ArrayObject
 
 	public function offsetGet ($index)
 	{
-		
 		return $this->offsetexists($index) ? parent::offsetGet($index) : NULL;
 	}
 
@@ -49,7 +48,7 @@ class TYPOlightDebugConfig extends ArrayObject
 		if($p_key=='debugMode' && !$p_value && TYPOlightDebug::isActive())
 		{
 			// work around the fact, that TYPOlight is including /system/config/localconfig.php twice.
-			$traces=debug_backtrace();
+			$traces=@debug_backtrace();
 			if(!(substr($this->path($traces[1]['file']),-28,28)=='/system/libraries/Config.php'))
 				TYPOlightDebug::warn($traces[1]['file'].':'.$traces[1]['line'].' tried to set debugMode to false, but I need it to remain true in debug mode.', true);
 		} else {

@@ -52,7 +52,7 @@ class TYPOlightDebugArray extends ArrayObject
 			// logging of statements disabled? exit!
 			if(!(array_key_exists('logDatabase', $GLOBALS['TL_CONFIG']) && $GLOBALS['TL_CONFIG']['logDatabase']))
 				return true;
-			$traces=debug_backtrace(false);
+			$traces=@debug_backtrace(false);
 			while(($file=='' || $file=='/system/libraries/Database.php') && $i++<count($traces)-2)
 			{
 				if(!($trace=$traces[$i]))

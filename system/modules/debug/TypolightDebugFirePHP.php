@@ -308,7 +308,7 @@ class TypolightDebugFirePHP extends FirePHP
     } else
     if($Type==self::TRACE)
 	{
-		$trace = debug_backtrace(false);
+		$trace = @debug_backtrace(false);
 		$fromTrace=(isset($trace[1]['class']) && isset($trace[1]['file']) && $trace[1]['class']=='FirePHP' && ($trace[1]['function']=='trace'));
 		$trace=$this->cleanTrace($trace, $Object);
 		if(!$trace) return false;
@@ -350,7 +350,7 @@ class TypolightDebugFirePHP extends FirePHP
 	{
 		if(!isset($meta['file']) || !isset($meta['line']))
 		{
-			$trace = debug_backtrace(false);
+			$trace = @debug_backtrace(false);
 			$trace=$this->cleanTrace($trace);
 			$meta['file'] = isset($trace[1]['file'])?$this->_escapeTraceFile($trace[1]['file']):'';
 			$meta['line'] = isset($trace[1]['line'])?$trace[1]['line']:'';
@@ -390,7 +390,7 @@ class TypolightDebugFirePHP extends FirePHP
 		if(false)
 		{
 			if(!isset($trace))
-				$trace = $this->cleanTrace(debug_backtrace());
+				$trace = $this->cleanTrace(@debug_backtrace());
 			if($trace)
 				$msg_meta['Trace'] = $this->_escapeTrace(array_splice($trace,2));
 		}
