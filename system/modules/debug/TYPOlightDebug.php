@@ -49,11 +49,11 @@ class TYPOlightDebug
 	/*
 	 * counters for the different supressed messages.
 	 */
-	protected static $supressed=array(E_WARNING=>0, E_NOTICE=>0, E_USER_NOTICE=>0, E_USER_WARNING=>0,  E_ERROR=>0,  E_USER_ERROR=>0,  E_RECOVERABLE_ERROR=>0);
+	protected static $supressed=array(E_WARNING=>0, E_NOTICE=>0, E_USER_NOTICE=>0, E_USER_WARNING=>0,  E_ERROR=>0,  E_USER_ERROR=>0,  E_RECOVERABLE_ERROR=>0, E_STRICT=>0);
 	/*
 	 * counters for the different supressed messages.
 	 */
-	protected static $counted=array(E_WARNING=>0, E_NOTICE=>0, E_USER_NOTICE=>0, E_USER_WARNING=>0,  E_ERROR=>0,  E_USER_ERROR=>0,  E_RECOVERABLE_ERROR=>0);
+	protected static $counted=array(E_WARNING=>0, E_NOTICE=>0, E_USER_NOTICE=>0, E_USER_WARNING=>0,  E_ERROR=>0,  E_USER_ERROR=>0,  E_RECOVERABLE_ERROR=>0, E_STRICT=>0);
 	/*
 	 * files to be skipped in error messages, if not mentioned within here, the error messages will get logged.
 	 */
@@ -195,7 +195,7 @@ class TYPOlightDebug
 						ob_end_clean();
 						ob_start();
 					}
-					self::error(self::$severity[$error['type']].' ' . $error['message'] . ' in file: ' . $error['file'] . ' on line ' . $error['line']);
+					self::error(self::$severity[$error['type']].' ' . $error['message'] . ' in file: ' . $error['file'] . ' on line ' . $error['line'].' (discovered on shutdown, no trace available)');
 					self::error('active modules: ' . implode(', ',Config::getInstance()->getActiveModules()));
 					show_help_message();
 					break;
@@ -525,44 +525,40 @@ class TYPOlightDebug
 			return true;
 		}
 
-		// Only log for errors we are asking for.
-		if (error_reporting() & $errno)
+		$location= ' in ' . $errfile.'::'.$errline;
+		switch($errno)
 		{
-			$location= ' in ' . $errfile.'::'.$errline;
-			switch($errno)
-			{
-				case E_NOTICE:
-				case E_USER_NOTICE:
-				case E_STRICT:
-					self::log(self::$severity[$errno] . ':' . $errstr . $location);
-					break;
-				case E_CORE_WARNING:
-				case E_COMPILE_WARNING: 
-				case E_WARNING: 
-				case E_USER_WARNING:
-				case E_DEPRECATED: 
-				case E_USER_DEPRECATED: 
-					if(strpos($errstr, 'json_encode()')===false && strpos($errstr, self::$WarnRecursion)===false)
-						self::warn(self::$severity[$errno] . ':' . $errstr . $location, true);
-					break;
-				case E_ERROR:
-				case E_USER_ERROR:
-				case E_RECOVERABLE_ERROR:
-				case E_PARSE:
-				case E_CORE_ERROR:
-				case E_COMPILE_ERROR:
-					self::error(self::$severity[$errno] . ':' . $errstr . $location, true);
-					break;
-				default:
-					$exception = new ErrorException($errstr, 0, $errno, $errfile, $errline);
-					if(self::$fb->throwErrorExceptions) {
-						throw $exception;
-					} else {
-						self::$fb->fb($exception);
-					}
-			}
-			return true;
+			case E_NOTICE:
+			case E_USER_NOTICE:
+			case E_STRICT:
+				self::log(self::$severity[$errno] . ':' . $errstr . $location);
+				break;
+			case E_CORE_WARNING:
+			case E_COMPILE_WARNING: 
+			case E_WARNING: 
+			case E_USER_WARNING:
+			case E_DEPRECATED: 
+			case E_USER_DEPRECATED: 
+				if(strpos($errstr, 'json_encode()')===false && strpos($errstr, self::$WarnRecursion)===false)
+					self::warn(self::$severity[$errno] . ':' . $errstr . $location, true);
+				break;
+			case E_ERROR:
+			case E_USER_ERROR:
+			case E_RECOVERABLE_ERROR:
+			case E_PARSE:
+			case E_CORE_ERROR:
+			case E_COMPILE_ERROR:
+				self::error(self::$severity[$errno] . ':' . $errstr . $location, true);
+				break;
+			default:
+				$exception = new ErrorException($errstr, 0, $errno, $errfile, $errline);
+				if(self::$fb->throwErrorExceptions) {
+					throw $exception;
+				} else {
+					self::$fb->fb($exception);
+				}
 		}
+		return true;
 	}
 
 	protected static $noticeLookup=array(

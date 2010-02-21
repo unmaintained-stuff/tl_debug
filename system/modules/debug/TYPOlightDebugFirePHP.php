@@ -40,7 +40,7 @@ require_once(TL_ROOT . '/system/modules/debug/FirePHPCore/FirePHP.class.php');
  * @license     http://www.opensource.org/licenses/bsd-license.php
  * @package     FirePHP
  */
-class TypolightDebugFirePHP extends FirePHP
+class TYPOlightDebugFirePHP extends FirePHP
 {
   
 	/**
