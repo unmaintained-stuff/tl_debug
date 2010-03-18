@@ -175,7 +175,8 @@ class TYPOlightDebug
 		// restore TYPOlight handlers for exceptions and errors and hide them.
 		// NOTE: this explicitly hides an Exception originating from the database class, 
 		// which want's to close resources in it's destructor that are already closed.
-		set_error_handler('__error');
+		// TEMPFIX: disabled this here, as it crashes in php as module sometimes... have no clue why.
+		//set_error_handler('__error');
 		set_exception_handler('__exception');
 		ini_set('display_errors', false);
 		self::shutDownArrayHandlers();
@@ -261,7 +262,7 @@ class TYPOlightDebug
 				return;
 
 			// starting up.
-			$fb=TypolightDebugFirePHP::getInstance(true);
+			$fb=TYPOlightDebugFirePHP::getInstance(true);
 			self::$fb=$fb;
 			if($fb->detectClientExtension())
 			{
@@ -271,7 +272,7 @@ class TYPOlightDebug
 
 				set_error_handler(array('TYPOlightDebug','errorHandler'));
 				error_reporting(E_ALL);
-				ini_set('display_errors', true);
+				ini_set('display_errors', false);
 				register_shutdown_function('debug_shutdown');
 				$fb->registerExceptionHandler();
 				if(array_key_exists('logErrors', $GLOBALS['TL_CONFIG']))
@@ -284,6 +285,7 @@ class TYPOlightDebug
 				$GLOBALS['TL_CONFIG'] = new TYPOlightDebugConfig((array_key_exists('TL_CONFIG', $GLOBALS) ? $GLOBALS['TL_CONFIG'] : array()));
 
 				// check if gZip is active and usable (will get used by Template class). If it is not in use, we have to put an output handler into place to prevent headers from being sent too early.
+				$arrEncoding = Environment::getInstance()->httpAcceptEncoding;
 				if (!($GLOBALS['TL_CONFIG']['enableGZip'] && (in_array('gzip', $arrEncoding) || in_array('x-gzip', $arrEncoding)) && function_exists('ob_gzhandler') && !ini_get('zlib.output_compression')))
 				{
 					ob_start();
